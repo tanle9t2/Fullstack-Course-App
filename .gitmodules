@@ -1,0 +1,9 @@
+[submodule "Open-Course"]
+	path = Open-Course
+	url = https://github.com/tanle9t2/Open-Course.git
+[submodule "Teacher-client-app"]
+	path = Teacher-client-app
+	url = https://github.com/tanle9t2/Teacher-client-app.git
+[submodule "Open-Course-Student-React"]
+	path = Open-Course-Student-React
+	url = https://github.com/Fat1512/Course-Student-React-App.git
