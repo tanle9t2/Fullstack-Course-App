@@ -7,3 +7,6 @@
 [submodule "Open-Course-Student-React"]
 	path = Open-Course-Student-React
 	url = https://github.com/Fat1512/Course-Student-React-App.git
+[submodule "Mini-RAG-Open-Course"]
+	path = Mini-RAG-Open-Course
+	url = https://github.com/tanle9t2/Mini-RAG-Open-Course
