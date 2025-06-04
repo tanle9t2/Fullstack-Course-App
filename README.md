@@ -2,7 +2,10 @@
 
 ## Overview
 
-Fullstack-Course-App is a version 4 modern, scalable, and robust fullstack application that enables users to register for courses and teachers to post their own courses. The platform supports real-world e-learning scenarios with secure authentication, real-time features, advanced search, integrated VNPay payment gateway, and revenue tracking for administrators.
+Open-Course delivers a modern and robust e-learning platform that enables users to register for courses
+and empowers instructors to create and manage content. The application ensures secure authentication, facilitates
+real-time interactions, supports advanced search, integrates VNPay for payments, and equips administrators with
+comprehensive revenue tracking.
 
 ## Features
 
@@ -20,7 +23,7 @@ Fullstack-Course-App is a version 4 modern, scalable, and robust fullstack appli
     - **Smart Recommendations:** The system suggests relevant courses based on course content similarity, categories, and tags, helping users discover related learning opportunities.
     - **Real-time Results:** Search results update instantly as users type, enabled by Elasticsearch’s high-performance indexing.
     - **Typo Tolerance:** Intelligent handling of misspelled words and synonyms to ensure users always find what they’re looking for.
-- **Responsive Frontend:** Modern React.js interface with smooth user experience and state management.
+- **Chatbox AI (Retrieval-Augmented Generation):** An interactive AI-powered chatbox is integrated into the platform, leveraging Retrieval-Augmented Generation (RAG) to answer user questions about courses, provide recommendations, and assist with navigation or support. The chatbox uses both the application's data and external information sources to deliver accurate, contextual responses in real time.
 
 ## Tech Stack
 
