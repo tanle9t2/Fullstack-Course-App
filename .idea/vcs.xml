@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Mini-RAG-Open-Course" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Open-Course" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Open-Course-Student-React" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Teacher-client-app" vcs="Git" />
+  </component>
+</project>

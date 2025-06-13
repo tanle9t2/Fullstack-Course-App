@@ -1,0 +1,221 @@
+services:
+  backend:
+    container_name: backend
+    build:
+      context: ./Open-Course/
+    ports:
+      - 8080:8080
+    environment:
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - CLOUDINARY_NAME=${CLOUDINARY_NAME}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - SENDGRID_TEMPLATE_ID=${SENDGRID_TEMPLATE_ID}
+      - OAUTH_INFO_URL=${OAUTH_INFO_URL}
+      - OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID}
+      - OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
+      - HIBERNATE_DIALECT=org.hibernate.dialect.MySQLDialect
+      - HIBERNATE_SHOW_SQL=true
+      - HIBERNATE_CONNECTION_DRIVER_CLASS=com.mysql.cj.jdbc.Driver
+      - HIBERNATE_CONNECTION_URL=jdbc:mysql://open-mysql:3306/open_course
+      - HIBERNATE_CONNECTION_USERNAME=root
+      - HIBERNATE_CONNECTION_PASSWORD=090224Tan
+      - ELASTIC_HOST=open-es-container
+      - ELASTIC_PORT=9200
+      - REDIS_HOST=open-redis-service
+      - REDIS_PORT=6379
+    depends_on:
+      - mysql
+    networks:
+      course-net:
+        ipv4_address: 172.92.0.111
+  nginx:
+    image: nginx:latest
+    container_name: open-nginx
+    build:
+      context: ./nginx/
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./Open-Course-Student-React/dist:/usr/share/nginx/html/student
+      - ./Teacher-client-app/dist:/usr/share/nginx/html/instructor
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - ./nginx/ssl/selfsigned.crt:/etc/ssl/certs/selfsigned.crt
+      - ./nginx/ssl/selfsigned.key:/etc/ssl/private/selfsigned.key
+    networks:
+      course-net:
+        ipv4_address: 172.92.0.92
+  redis:
+    container_name: open-redis-service
+    image: redis:7.2
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/root/redis
+    networks:
+      course-net:
+        ipv4_address: 172.92.0.205
+  redis-insight:
+    image: redis/redisinsight
+    ports:
+      - 5540:5540
+    networks:
+      course-net:
+        ipv4_address: 172.92.0.206
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
+    container_name: open-es-container
+    environment:
+      - ELASTIC_PASSWORD=090224T@n
+      - xpack.security.enabled=false
+      - "discovery.type=single-node"
+    networks:
+      course-net:
+        ipv4_address: 172.92.0.203
+    ports:
+      - 9200:9200
+    deploy:
+      resources:
+        limits:
+          memory: 2000M
+  kibana:
+    image: kibana:7.17.24
+    container_name: open-kb-container
+    environment:
+      - KIBANA_PASSWORD=090224T@n
+      - ELASTICSEARCH_HOSTS=http://es-container:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - course-net
+    ports:
+      - 5601:5601
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - course-net
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop:3.28.0
+    networks:
+      - course-net
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: kafka2:29092
+
+  kafka2:
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka2
+    container_name: open-kafka2
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://open-kafka2:29092,OUTSIDE://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL: PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_LISTENER_NAME_INSIDE: INSIDE
+      KAFKA_LISTENER_NAME_OUTSIDE: OUTSIDE
+      KAFKA_LISTENER_PORT_INSIDE: 29092
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+    networks:
+      course-net:
+        ipv4_address: 172.92.0.101
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+
+  schema_registry:
+    image: confluentinc/cp-schema-registry:6.2.0
+    hostname: schema-registry
+    container_name: open-schema-registry
+    depends_on:
+      - kafka2
+    networks:
+      - course-net
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka2:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://127.0.0.1:8081
+    # Debezium Service (optional)
+  debezium:
+    image: debezium/connect:2.7.3.Final
+    hostname: debezium-container
+    container_name: open-debezium-container
+    networks:
+      - course-net
+    ports:
+      - "8083:8083"
+    depends_on:
+      - kafka2
+      - schema_registry
+    environment:
+      DEBUG: "true"
+      BOOTSTRAP_SERVERS: open-kafka2:29092
+      GROUP_ID: debezium-group
+
+      CONFIG_STORAGE_TOPIC: debezium_config
+      OFFSET_STORAGE_TOPIC: debezium_offset
+      STATUS_STORAGE_TOPIC: debezium_status
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+
+      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_CACHE_SIZE: 1000
+      CONNECT_VALUE_CONVERTER_SCHEMAS_CACHE_SIZE: 1000
+      CONNECT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+
+      SCHEMA_HISTORY_INTERNAL_KAFKA_TOPIC: schema-changes.mysql_server_history
+      SCHEMA_HISTORY_INTERNAL_KAFKA_BOOTSTRAP_SERVERS: open-kafka2:29092
+  debezium-ui:
+    container_name: open-debezium-ui
+    image: debezium/debezium-ui:1.9
+    networks:
+      - course-net
+    ports:
+      - "8090:8090"
+    environment:
+      - KAFKA_CONNECT_URIS=http://open-debezium-container:8083
+    depends_on:
+      - debezium
+  mysql:
+    container_name: open-mysql
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 090224Tan
+      MYSQL_USER: tanle92
+      MYSQL_PASSWORD: 090224Tan
+    volumes:
+      - ./data.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      course-net:
+        ipv4_address: 172.92.0.200
+networks:
+  course-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.92.0.0/16
+          gateway: 172.92.0.1
+
+volumes:
+  redis-data:
